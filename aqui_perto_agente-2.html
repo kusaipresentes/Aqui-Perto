@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aqui Perto! — Agente de Encartes</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde: #085041; --verde-medio: #1D9E75; --verde-claro: #E1F5EE;
+    --amarelo: #E8B400; --amarelo-claro: #FFF8E1; --areia: #F1EFE8;
+    --texto: #2C2C2A; --texto-sec: #6B6966; --texto-ter: #B4B2A9;
+    --borda: #E2E0D8; --branco: #ffffff; --radius: 14px; --radius-sm: 8px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--areia); color: var(--texto); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--verde); padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+  .header-pin { width: 34px; height: 34px; flex-shrink: 0; }
+  .header-title { font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .header-title span { color: var(--amarelo); }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 1px; }
+
+  /* MODO BTN */
+  .modo-btn {
+    background: var(--branco); border: 1.5px solid var(--borda);
+    border-radius: var(--radius); padding: 14px 10px; text-align: center;
+    cursor: pointer; transition: all 0.15s; color: var(--texto-sec);
+  }
+  .modo-btn.active { background: var(--verde); border-color: var(--verde); color: #fff; }
+  .modo-btn:hover:not(.active) { border-color: var(--verde-medio); color: var(--verde); }
+
+  /* PRODUTO LINHA */
+  .produto-linha { background: var(--branco); border: 0.5px solid var(--borda); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; }
+  .produto-linha-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .produto-nome-input { flex: 1; padding: 7px 10px; background: var(--areia); border: 1.5px solid var(--borda); border-radius: var(--radius-sm); font-size: 12px; color: var(--texto); outline: none; }
+  .produto-nome-input:focus { border-color: var(--verde-medio); }
+  .produto-precos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .preco-mercado-wrap { display: flex; flex-direction: column; gap: 3px; }
+  .preco-mercado-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-ter); }
+  .preco-mercado-input { width: 90px; padding: 6px 8px; background: var(--areia); border: 1.5px solid var(--borda); border-radius: var(--radius-sm); font-size: 12px; color: var(--texto); outline: none; }
+  .preco-mercado-input:focus { border-color: var(--verde-medio); }
+  .btn-del-produto { background: none; border: none; color: var(--texto-ter); cursor: pointer; font-size: 15px; padding: 2px; flex-shrink: 0; }
+  .btn-del-produto:hover { color: #c0392b; }
+
+  /* MERCADO INPUT */
+  .mercado-input-wrap { display: flex; align-items: center; gap: 8px; }
+  .mercado-tag { display: flex; align-items: center; gap: 6px; background: var(--verde-claro); border: 1px solid var(--verde-medio); border-radius: 99px; padding: 5px 12px; font-size: 12px; font-weight: 500; color: var(--verde); }
+  .mercado-tag button { background: none; border: none; cursor: pointer; color: var(--verde-medio); font-size: 13px; padding: 0; line-height: 1; }
+  .mercado-tag button:hover { color: #c0392b; }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--verde); padding: 0 16px; border-bottom: 2px solid #04342C; }
+  .tab { padding: 10px 16px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+  .tab.active { color: var(--amarelo); border-bottom-color: var(--amarelo); }
+  .tab:hover:not(.active) { color: rgba(255,255,255,0.85); }
+
+  /* MAIN */
+  .main { padding: 16px; max-width: 680px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* LABELS */
+  .upload-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--texto-sec); margin-bottom: 8px; display: block; }
+
+  /* UPLOAD */
+  .upload-box { background: var(--branco); border: 1.5px dashed var(--borda); border-radius: var(--radius); padding: 22px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; margin-bottom: 10px; }
+  .upload-box:hover { border-color: var(--verde-medio); background: var(--verde-claro); }
+  .upload-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 26px; margin-bottom: 6px; }
+  .upload-text { font-size: 13px; font-weight: 500; color: var(--verde); }
+  .upload-hint { font-size: 11px; color: var(--texto-ter); margin-top: 3px; }
+  .files-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .file-chip { display: flex; align-items: center; gap: 6px; background: var(--branco); border: 0.5px solid var(--borda); border-radius: 99px; padding: 5px 10px; font-size: 12px; color: var(--texto); }
+  .file-chip-remove { background: none; border: none; cursor: pointer; color: var(--texto-ter); font-size: 14px; line-height: 1; padding: 0; margin-left: 2px; }
+  .file-chip-remove:hover { color: #c0392b; }
+
+  /* CATEGORIAS */
+  .cat-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .cat-btn { background: var(--branco); border: 1.5px solid var(--borda); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 500; color: var(--texto-sec); cursor: pointer; transition: all 0.15s; }
+  .cat-btn.active { background: var(--verde); border-color: var(--verde); color: #fff; }
+  .cat-btn:hover:not(.active) { border-color: var(--verde-medio); color: var(--verde); }
+
+  /* BOTÕES */
+  .btn-primary { width: 100%; padding: 13px; background: var(--amarelo); border: none; border-radius: var(--radius); font-size: 14px; font-weight: 700; color: var(--verde); cursor: pointer; transition: opacity 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-secondary { width: 100%; padding: 11px; background: var(--verde-claro); border: 1.5px solid var(--verde-medio); border-radius: var(--radius); font-size: 13px; font-weight: 600; color: var(--verde); cursor: pointer; transition: background 0.15s; margin-bottom: 10px; }
+  .btn-secondary:hover { background: #c8eedd; }
+  .btn-ghost { width: 100%; padding: 10px; background: transparent; border: 1.5px solid var(--borda); border-radius: var(--radius); font-size: 13px; font-weight: 500; color: var(--texto-sec); cursor: pointer; transition: all 0.15s; margin-bottom: 20px; }
+  .btn-ghost:hover { border-color: var(--verde); color: var(--verde); }
+
+  /* LOADING */
+  .loading { display: none; text-align: center; padding: 32px 20px; background: var(--branco); border-radius: var(--radius); margin-bottom: 16px; }
+  .loading.visible { display: block; }
+  .loading-spinner { width: 34px; height: 34px; border: 3px solid var(--verde-claro); border-top-color: var(--verde); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* RESULTADO */
+  .resultado { display: none; }
+  .resultado.visible { display: block; }
+  .result-card { background: var(--branco); border-radius: var(--radius); border: 0.5px solid var(--borda); margin-bottom: 14px; overflow: hidden; }
+  .result-card-header { padding: 11px 16px; background: var(--verde); display: flex; align-items: center; justify-content: space-between; }
+  .result-card-title { font-size: 13px; font-weight: 600; color: #fff; }
+  .result-card-body { padding: 14px 16px; }
+
+  /* TABELA */
+  .tabela-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-ter); padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--borda); }
+  td { padding: 7px 8px; border-bottom: 0.5px solid var(--areia); color: var(--texto); }
+  tr:last-child td { border-bottom: none; }
+  .price-best { font-weight: 700; color: var(--verde); }
+  .price-best::after { content: " 🌟"; font-size: 10px; }
+  .item-name { font-weight: 500; }
+
+  /* CESTAS */
+  .cestas-wrap { display: flex; flex-direction: column; gap: 12px; }
+  .cesta-bloco { border-radius: var(--radius-sm); overflow: hidden; border: 1.5px solid var(--borda); }
+  .cesta-bloco.inteligente { border-color: var(--amarelo); }
+  .cesta-bloco-header { padding: 9px 14px; display: flex; align-items: center; justify-content: space-between; background: var(--areia); }
+  .cesta-bloco.inteligente .cesta-bloco-header { background: var(--amarelo-claro); }
+  .cesta-bloco-titulo { font-size: 12px; font-weight: 600; color: var(--texto); }
+  .cesta-bloco-desc { font-size: 10px; color: var(--texto-ter); margin-top: 1px; }
+  .cesta-bloco-body { padding: 12px 14px; background: var(--branco); }
+  .cesta-trad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+  .cesta-trad-item { border-radius: var(--radius-sm); padding: 10px; text-align: center; border: 1px solid var(--borda); }
+  .cesta-trad-item.winner { background: var(--verde-claro); border-color: var(--verde-medio); }
+  .cesta-trad-mercado { font-size: 10px; font-weight: 600; color: var(--texto-sec); margin-bottom: 4px; }
+  .cesta-trad-valor { font-size: 17px; font-weight: 700; color: var(--verde); line-height: 1; }
+  .cesta-trad-badge { display: inline-block; background: var(--verde); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px; margin-top: 4px; }
+  .cesta-int-total { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+  .cesta-int-valor { font-size: 28px; font-weight: 700; color: var(--verde); line-height: 1; }
+  .cesta-int-label { font-size: 11px; color: var(--texto-sec); }
+  .cesta-int-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid var(--areia); font-size: 12px; }
+  .cesta-int-row:last-child { border-bottom: none; }
+  .cesta-int-preco { font-weight: 700; color: var(--verde); }
+  .economia-banner { background: linear-gradient(135deg, var(--verde) 0%, var(--verde-medio) 100%); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .economia-valor { font-size: 24px; font-weight: 700; color: var(--amarelo); line-height: 1; }
+
+  /* INSIGHTS */
+  .insight-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 0.5px solid var(--areia); }
+  .insight-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .insight-emoji { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .insight-text { font-size: 12px; color: var(--texto); line-height: 1.55; }
+
+  /* POST TEXT */
+  .post-text { background: var(--areia); border-radius: var(--radius-sm); padding: 13px; font-size: 12px; color: var(--texto); line-height: 1.65; white-space: pre-wrap; font-family: inherit; }
+  .btn-copy { margin-top: 8px; width: 100%; padding: 9px; background: var(--verde-claro); border: 1.5px solid var(--verde-medio); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--verde); cursor: pointer; transition: background 0.15s; }
+  .btn-copy:hover { background: #c8eedd; }
+  .btn-copy.copied { background: var(--verde); color: #fff; border-color: var(--verde); }
+
+  /* ERROR */
+  .error-box { display: none; background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-sm); padding: 11px 14px; font-size: 13px; color: #991B1B; margin-bottom: 12px; }
+  .error-box.visible { display: block; }
+
+  /* BANCO DE PREÇOS */
+  .banco-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--branco); border-radius: var(--radius-sm); padding: 12px; text-align: center; border: 0.5px solid var(--borda); }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--verde); }
+  .stat-label { font-size: 10px; color: var(--texto-ter); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .form-row { margin-bottom: 12px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--texto-sec); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-input { width: 100%; padding: 9px 12px; background: var(--branco); border: 1.5px solid var(--borda); border-radius: var(--radius-sm); font-size: 13px; color: var(--texto); outline: none; transition: border-color 0.15s; }
+  .form-input:focus { border-color: var(--verde-medio); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .registro-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--branco); border-radius: var(--radius-sm); border: 0.5px solid var(--borda); margin-bottom: 6px; }
+  .reg-produto { font-size: 12px; font-weight: 500; color: var(--texto); flex: 1; }
+  .reg-mercado { font-size: 10px; color: var(--verde-medio); background: var(--verde-claro); padding: 2px 7px; border-radius: 99px; }
+  .reg-preco { font-size: 13px; font-weight: 700; color: var(--verde); }
+  .reg-data { font-size: 10px; color: var(--texto-ter); }
+  .reg-fonte { font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+  .reg-fonte.encarte { background: #E8F4FD; color: #1a6fa3; }
+  .reg-fonte.manual { background: #FEF3C7; color: #92400E; }
+  .reg-fonte.contribuicao { background: #F3E8FF; color: #6B21A8; }
+  .reg-delete { background: none; border: none; cursor: pointer; color: var(--texto-ter); font-size: 14px; padding: 2px 4px; }
+  .reg-delete:hover { color: #c0392b; }
+
+  .search-bar { width: 100%; padding: 9px 12px; background: var(--branco); border: 1.5px solid var(--borda); border-radius: var(--radius-sm); font-size: 13px; color: var(--texto); outline: none; margin-bottom: 12px; }
+  .search-bar:focus { border-color: var(--verde-medio); }
+
+  /* HISTORICO / CONSULTA */
+  .consulta-box { background: var(--branco); border-radius: var(--radius); border: 0.5px solid var(--borda); padding: 14px; margin-bottom: 14px; }
+  .consulta-input { width: 100%; padding: 10px 14px; background: var(--areia); border: 1.5px solid var(--borda); border-radius: var(--radius-sm); font-size: 13px; color: var(--texto); outline: none; resize: none; font-family: inherit; }
+  .consulta-input:focus { border-color: var(--verde-medio); }
+  .consulta-resposta { background: var(--areia); border-radius: var(--radius-sm); padding: 13px; font-size: 13px; line-height: 1.65; color: var(--texto); white-space: pre-wrap; display: none; margin-top: 10px; }
+  .consulta-resposta.visible { display: block; }
+
+  .historico-item { background: var(--branco); border-radius: var(--radius-sm); border: 0.5px solid var(--borda); padding: 11px 14px; margin-bottom: 8px; }
+  .hist-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .hist-produto { font-size: 13px; font-weight: 600; color: var(--texto); }
+  .hist-trend-up { color: #c0392b; font-size: 11px; font-weight: 600; }
+  .hist-trend-down { color: var(--verde-medio); font-size: 11px; font-weight: 600; }
+  .hist-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--texto-sec); padding: 3px 0; border-bottom: 0.5px solid var(--areia); }
+  .hist-row:last-child { border-bottom: none; }
+
+  .empty-state { text-align: center; padding: 32px 20px; color: var(--texto-ter); }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+  .empty-text { font-size: 13px; }
+
+  .badge-super { display: inline-block; background: var(--amarelo); color: var(--verde); font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <svg class="header-pin" viewBox="0 0 48 58" fill="none">
+    <path d="M24 2C13.5 2 5 10.5 5 21C5 34 24 56 24 56C24 56 43 34 43 21C43 10.5 34.5 2 24 2Z" fill="#04342C"/>
+    <path d="M24 4C14.6 4 7 11.6 7 21C7 33.2 24 54 24 54C24 54 41 33.2 41 21C41 11.6 33.4 4 24 4Z" fill="#1D9E75"/>
+    <text x="24" y="27" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="16" font-weight="900" fill="#E8B400">%</text>
+  </svg>
+  <div>
+    <div class="header-title">Aqui Perto<span>!</span></div>
+    <div class="header-sub">Agente de análise de encartes</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('analisar')">🔍 Analisar</div>
+  <div class="tab" onclick="switchTab('banco')">🗄️ Banco de Preços</div>
+  <div class="tab" onclick="switchTab('historico')">📈 Consultar Histórico</div>
+</div>
+
+<div class="main">
+
+  <!-- ABA ANALISAR -->
+  <div class="tab-panel active" id="tab-analisar">
+
+    <!-- SELETOR DE MODO -->
+    <div style="margin-bottom:16px;">
+      <span class="upload-label">1. Modo de entrada</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="modo-btn active" id="modoArquivo" onclick="setModo('arquivo')">
+          <div style="font-size:20px;margin-bottom:4px;">📋</div>
+          <div style="font-size:13px;font-weight:600;color:inherit;">Encartes</div>
+          <div style="font-size:10px;margin-top:2px;opacity:0.7;">Foto, print ou PDF</div>
+        </div>
+        <div class="modo-btn" id="modoManual" onclick="setModo('manual')">
+          <div style="font-size:20px;margin-bottom:4px;">⌨️</div>
+          <div style="font-size:13px;font-weight:600;color:inherit;">Manual</div>
+          <div style="font-size:10px;margin-top:2px;opacity:0.7;">Digitar os preços</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAINEL ARQUIVO -->
+    <div id="painelArquivo">
+      <div style="margin-bottom:14px;">
+        <span class="upload-label">2. Encartes</span>
+        <div class="upload-box">
+          <input type="file" id="fileInput" multiple accept="image/*,.pdf">
+          <div class="upload-icon">📋</div>
+          <div class="upload-text">Solte os encartes aqui</div>
+          <div class="upload-hint">Fotos, prints ou PDFs — pode misturar</div>
+        </div>
+        <div class="files-list" id="filesList"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <span class="upload-label">3. Categoria</span>
+        <div class="cat-grid" id="catGridArquivo">
+          <button class="cat-btn active" data-cat="Hortifruti">🥦 Hortifruti</button>
+          <button class="cat-btn" data-cat="Açougue">🥩 Açougue</button>
+          <button class="cat-btn" data-cat="Mercearia">🛒 Mercearia</button>
+          <button class="cat-btn" data-cat="Laticínios">🥛 Laticínios</button>
+          <button class="cat-btn" data-cat="Geral">📊 Geral</button>
+        </div>
+      </div>
+      <button class="btn-primary" id="btnAnalisar" disabled>🔍 Analisar encartes</button>
+    </div>
+
+    <!-- PAINEL MANUAL -->
+    <div id="painelManual" style="display:none;">
+      <div style="margin-bottom:14px;">
+        <span class="upload-label">2. Categoria</span>
+        <div class="cat-grid" id="catGridManual">
+          <button class="cat-btn active" data-cat="Hortifruti">🥦 Hortifruti</button>
+          <button class="cat-btn" data-cat="Açougue">🥩 Açougue</button>
+          <button class="cat-btn" data-cat="Mercearia">🛒 Mercearia</button>
+          <button class="cat-btn" data-cat="Laticínios">🥛 Laticínios</button>
+          <button class="cat-btn" data-cat="Geral">📊 Geral</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <span class="upload-label">3. Mercados</span>
+        <div id="mercadosManual" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
+        <button class="btn-ghost" style="margin-bottom:0;padding:8px;" onclick="addMercado()">+ Adicionar mercado</button>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span class="upload-label" style="margin-bottom:0;">4. Produtos e preços</span>
+          <button onclick="addProdutoManual()" style="background:var(--verde);color:#fff;border:none;border-radius:99px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;">+ Produto</button>
+        </div>
+        <div id="produtosManual"></div>
+      </div>
+
+      <button class="btn-primary" id="btnAnalisarManual" onclick="analisarManual()">🔍 Gerar comparativo</button>
+    </div>
+
+    <button class="btn-secondary" onclick="carregarExemplo()" style="margin-top:4px;">⚡ Ver exemplo com dados reais (17/06)</button>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="loading" id="loading">
+      <div class="loading-spinner"></div>
+      <div style="font-size:13px;font-weight:500;color:var(--verde);">Processando...</div>
+      <div style="font-size:11px;color:var(--texto-sec);margin-top:5px;" id="loadingStep">Aguarde</div>
+    </div>
+
+    <div class="resultado" id="resultado"></div>
+    <button class="btn-ghost" id="btnNova" style="display:none" onclick="resetar()">↩ Nova análise</button>
+  </div>
+
+  <!-- ABA BANCO DE PREÇOS -->
+  <div class="tab-panel" id="tab-banco">
+    <div class="banco-stats">
+      <div class="stat-card"><div class="stat-num" id="statRegistros">0</div><div class="stat-label">Registros</div></div>
+      <div class="stat-card"><div class="stat-num" id="statProdutos">0</div><div class="stat-label">Produtos</div></div>
+      <div class="stat-card"><div class="stat-num" id="statMercados">0</div><div class="stat-label">Mercados</div></div>
+    </div>
+
+    <!-- Adicionar manual -->
+    <div class="result-card" style="margin-bottom:14px;">
+      <div class="result-card-header"><span class="result-card-title">✏️ Adicionar registro manual</span></div>
+      <div class="result-card-body">
+        <div class="form-row">
+          <label class="form-label">Produto</label>
+          <input class="form-input" id="manProduto" placeholder="Ex: Tomate italiano kg" type="text">
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label class="form-label">Mercado</label>
+            <input class="form-input" id="manMercado" placeholder="Ex: Hortifruti do Zé" type="text">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Preço (R$)</label>
+            <input class="form-input" id="manPreco" placeholder="Ex: 4.99" type="number" step="0.01">
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row">
+            <label class="form-label">Categoria</label>
+            <select class="form-input" id="manCategoria">
+              <option>Hortifruti</option><option>Açougue</option><option>Mercearia</option><option>Laticínios</option><option>Outro</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Fonte</label>
+            <select class="form-input" id="manFonte">
+              <option value="manual">Registro manual</option>
+              <option value="contribuicao">Contribuição usuário</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-primary" style="margin-bottom:0" onclick="adicionarManual()">➕ Adicionar ao banco</button>
+      </div>
+    </div>
+
+    <!-- Upload contribuição foto/NF -->
+    <div class="result-card" style="margin-bottom:14px;">
+      <div class="result-card-header"><span class="result-card-title">📸 Extrair preços de foto ou NF</span></div>
+      <div class="result-card-body">
+        <div class="upload-box" style="margin-bottom:8px;">
+          <input type="file" id="fotoInput" multiple accept="image/*,.pdf">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">Foto de etiqueta, NF ou cupom fiscal</div>
+          <div class="upload-hint">A IA extrai os preços e você confirma antes de salvar</div>
+        </div>
+        <div class="files-list" id="fotosListBanco"></div>
+        <button class="btn-secondary" id="btnExtair" disabled onclick="extrairFoto()">🤖 Extrair preços com IA</button>
+        <div class="loading" id="loadingFoto" style="padding:16px;">
+          <div class="loading-spinner"></div>
+          <div style="font-size:12px;color:var(--texto-sec);">Extraindo preços da imagem...</div>
+        </div>
+        <div id="extracao"></div>
+      </div>
+    </div>
+
+    <!-- Lista do banco -->
+    <div class="result-card">
+      <div class="result-card-header">
+        <span class="result-card-title">📋 Registros salvos</span>
+        <button onclick="limparBanco()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:11px;cursor:pointer;">Limpar tudo</button>
+      </div>
+      <div class="result-card-body" style="padding:12px;">
+        <input class="search-bar" id="searchBanco" placeholder="🔍 Buscar produto ou mercado..." oninput="renderBanco()">
+        <div id="listaBanco"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA HISTÓRICO -->
+  <div class="tab-panel" id="tab-historico">
+    <div class="consulta-box">
+      <span class="upload-label" style="margin-bottom:8px;">Consulta em linguagem natural</span>
+      <textarea class="consulta-input" id="consultaInput" rows="3" placeholder="Ex: Qual mercado foi mais barato em carne este mês? / Tomate está em super oferta hoje? / Produtos abaixo da média histórica esta semana"></textarea>
+      <button class="btn-primary" style="margin-top:10px;margin-bottom:0;" onclick="consultarHistorico()">🧠 Consultar</button>
+      <div class="loading" id="loadingConsulta" style="padding:16px;">
+        <div class="loading-spinner"></div>
+        <div style="font-size:12px;color:var(--texto-sec);">Analisando o histórico...</div>
+      </div>
+      <div class="consulta-resposta" id="consultaResposta"></div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-card-header"><span class="result-card-title">📊 Histórico de preços por produto</span></div>
+      <div class="result-card-body" style="padding:12px;">
+        <input class="search-bar" id="searchHistorico" placeholder="🔍 Buscar produto..." oninput="renderHistorico()">
+        <div id="listaHistorico"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── MODO ENTRADA ─────────────────────────────────────────────────────────────
+let modoAtual = 'arquivo';
+let mercadosManuais = [];
+let produtosManuais = [];
+
+function setModo(modo) {
+  modoAtual = modo;
+  document.getElementById('modoArquivo').classList.toggle('active', modo==='arquivo');
+  document.getElementById('modoManual').classList.toggle('active', modo==='manual');
+  document.getElementById('painelArquivo').style.display = modo==='arquivo' ? 'block' : 'none';
+  document.getElementById('painelManual').style.display = modo==='manual' ? 'block' : 'none';
+  if (modo==='manual' && mercadosManuais.length===0) {
+    mercadosManuais = ['SuperRede','MAM'];
+    renderMercados();
+    addProdutoManual(); addProdutoManual(); addProdutoManual();
+  }
+}
+
+function addMercado() {
+  const nome = prompt('Nome do mercado:');
+  if (!nome || !nome.trim()) return;
+  mercadosManuais.push(nome.trim());
+  renderMercados();
+  renderProdutosManual();
+}
+
+function removeMercado(i) {
+  mercadosManuais.splice(i, 1);
+  renderMercados();
+  renderProdutosManual();
+}
+
+function renderMercados() {
+  const wrap = document.getElementById('mercadosManual');
+  wrap.innerHTML = mercadosManuais.map((m,i) => `
+    <div class="mercado-tag" style="display:inline-flex;margin-right:6px;margin-bottom:4px;">
+      <span>${m}</span>
+      <button onclick="removeMercado(${i})">×</button>
+    </div>`).join('');
+}
+
+function addProdutoManual() {
+  produtosManuais.push({ nome: '', precos: {} });
+  renderProdutosManual();
+}
+
+function removeProduto(i) {
+  produtosManuais.splice(i, 1);
+  renderProdutosManual();
+}
+
+function renderProdutosManual() {
+  const wrap = document.getElementById('produtosManual');
+  wrap.innerHTML = produtosManuais.map((p, i) => `
+    <div class="produto-linha">
+      <div class="produto-linha-header">
+        <input class="produto-nome-input" placeholder="Nome do produto (ex: Tomate kg)" value="${p.nome}" oninput="produtosManuais[${i}].nome=this.value">
+        <button class="btn-del-produto" onclick="removeProduto(${i})">🗑️</button>
+      </div>
+      <div class="produto-precos">
+        ${mercadosManuais.map(m => `
+          <div class="preco-mercado-wrap">
+            <span class="preco-mercado-label">${m}</span>
+            <input class="preco-mercado-input" type="number" step="0.01" placeholder="—"
+              value="${p.precos[m]||''}"
+              oninput="produtosManuais[${i}].precos['${m}']=this.value?Number(this.value):null">
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function analisarManual() {
+  const validos = produtosManuais.filter(p => p.nome.trim() && mercadosManuais.some(m => p.precos[m]));
+  if (!validos.length || !mercadosManuais.length) { alert('Adicione pelo menos um produto com preço em algum mercado.'); return; }
+
+  const catManual = document.querySelector('#catGridManual .cat-btn.active')?.dataset.cat || 'Geral';
+
+  errorBox.classList.remove('visible');
+  loading.classList.add('visible');
+  resultado.classList.remove('visible');
+  resultado.innerHTML = '';
+  btnNova.style.display = 'none';
+  loadingStep.textContent = 'Gerando comparativo...';
+
+  try {
+    const tabelaTexto = validos.map(p =>
+      `${p.nome}: ${mercadosManuais.map(m => `${m}=${p.precos[m]!=null?'R$'+p.precos[m].toFixed(2):'sem preço'}`).join(', ')}`
+    ).join('\n');
+
+    const prompt = `Você é o agente de análise do "Aqui Perto!" — comunidade local de ofertas de Campo Grande, RJ.
+Com base nos preços abaixo (digitados manualmente), gere o comparativo completo.
+
+Categoria: ${catManual}
+Data: ${hoje()}
+Mercados: ${mercadosManuais.join(', ')}
+
+Preços:
+${tabelaTexto}
+
+Retorne APENAS JSON válido, sem markdown:
+{
+  "data": "${hoje()}",
+  "categoria": "${catManual}",
+  "mercados": ${JSON.stringify(mercadosManuais)},
+  "tabela": [{"item": "Produto", "precos": {"Mercado1": 9.99, "Mercado2": null}}],
+  "cesta_tradicional": {"descricao": "Comprar tudo no mesmo mercado", "vencedor": "MercadoX", "valores": {"Mercado1": 99.99}},
+  "cesta_inteligente": {"descricao": "Melhor preço de cada item", "total": 72.30, "itens": [{"item": "Produto", "mercado": "MercadoX", "preco": 3.99}]},
+  "economia_acumulada": 16.20,
+  "insights": ["insight1", "insight2", "insight3"],
+  "texto_post": "Texto WhatsApp com emojis, tabela, Cesta Inteligente e CTA"
+}
+Regras: use null para preços não informados; cesta_inteligente agrupada por mercado; texto coloquial com voz de bairro.`;
+
+    const res = await callAPI([{ type:'text', text: prompt }], 3000);
+    const d = parseJSON(res);
+    await salvarNoBANCO(d);
+    renderResultado(d);
+  } catch(err) {
+    errorBox.textContent = 'Erro: ' + err.message;
+    errorBox.classList.add('visible');
+  } finally {
+    loading.classList.remove('visible');
+    btnNova.style.display = 'block';
+  }
+}
+
+// ─── ESTADO ───────────────────────────────────────────────────────────────────
+let selectedFiles = [];
+let selectedCat = 'Hortifruti';
+let fotoFiles = [];
+let banco = [];
+
+const fileInput = document.getElementById('fileInput');
+const filesList = document.getElementById('filesList');
+const btnAnalisar = document.getElementById('btnAnalisar');
+const loading = document.getElementById('loading');
+const loadingStep = document.getElementById('loadingStep');
+const resultado = document.getElementById('resultado');
+const errorBox = document.getElementById('errorBox');
+const btnNova = document.getElementById('btnNova');
+const fotoInput = document.getElementById('fotoInput');
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'banco') { loadBanco(); renderBanco(); }
+  if (id === 'historico') { loadBanco(); renderHistorico(); }
+}
+
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+async function saveBanco() {
+  try { await window.storage.set('banco_precos', JSON.stringify(banco)); } catch(e) {}
+}
+async function loadBanco() {
+  try {
+    const r = await window.storage.get('banco_precos');
+    if (r) banco = JSON.parse(r.value);
+  } catch(e) { banco = []; }
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('statRegistros').textContent = banco.length;
+  document.getElementById('statProdutos').textContent = new Set(banco.map(r => r.produto.toLowerCase())).size;
+  document.getElementById('statMercados').textContent = new Set(banco.map(r => r.mercado)).size;
+}
+
+// ─── CATEGORIAS ───────────────────────────────────────────────────────────────
+document.querySelectorAll('#catGridArquivo .cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#catGridArquivo .cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCat = btn.dataset.cat;
+  });
+});
+document.querySelectorAll('#catGridManual .cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#catGridManual .cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ─── UPLOAD ENCARTES ─────────────────────────────────────────────────────────
+fileInput.addEventListener('change', (e) => {
+  Array.from(e.target.files).forEach(f => {
+    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) selectedFiles.push(f);
+  });
+  renderFiles(); fileInput.value = '';
+});
+function renderFiles() {
+  filesList.innerHTML = '';
+  selectedFiles.forEach((f, i) => {
+    const ext = f.name.split('.').pop().toUpperCase();
+    const chip = document.createElement('div'); chip.className = 'file-chip';
+    chip.innerHTML = `<span>${ext==='PDF'?'📄':'🖼️'}</span><span>${f.name.length>22?f.name.slice(0,20)+'…':f.name}</span><button class="file-chip-remove" onclick="removeFile(${i})">×</button>`;
+    filesList.appendChild(chip);
+  });
+  btnAnalisar.disabled = selectedFiles.length === 0;
+}
+function removeFile(i) { selectedFiles.splice(i, 1); renderFiles(); }
+
+// ─── UPLOAD FOTOS BANCO ───────────────────────────────────────────────────────
+fotoInput.addEventListener('change', (e) => {
+  Array.from(e.target.files).forEach(f => {
+    if (!fotoFiles.find(x => x.name === f.name)) fotoFiles.push(f);
+  });
+  renderFotosBanco(); fotoInput.value = '';
+});
+function renderFotosBanco() {
+  const list = document.getElementById('fotosListBanco');
+  list.innerHTML = '';
+  fotoFiles.forEach((f, i) => {
+    const ext = f.name.split('.').pop().toUpperCase();
+    const chip = document.createElement('div'); chip.className = 'file-chip';
+    chip.innerHTML = `<span>${ext==='PDF'?'📄':'📷'}</span><span>${f.name.length>22?f.name.slice(0,20)+'…':f.name}</span><button class="file-chip-remove" onclick="removeFoto(${i})">×</button>`;
+    list.appendChild(chip);
+  });
+  document.getElementById('btnExtair').disabled = fotoFiles.length === 0;
+}
+function removeFoto(i) { fotoFiles.splice(i, 1); renderFotosBanco(); }
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Falha ao ler'));
+    r.readAsDataURL(file);
+  });
+}
+function getMime(file) {
+  if (file.type) return file.type;
+  const ext = file.name.split('.').pop().toLowerCase();
+  return { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', pdf:'application/pdf' }[ext] || 'image/jpeg';
+}
+function hoje() { return new Date().toLocaleDateString('pt-BR'); }
+function agora() { return new Date().toLocaleString('pt-BR'); }
+
+// ─── ANALISAR ENCARTES ────────────────────────────────────────────────────────
+btnAnalisar.addEventListener('click', async () => {
+  if (!selectedFiles.length) return;
+  btnAnalisar.disabled = true;
+  loading.classList.add('visible');
+  resultado.classList.remove('visible');
+  resultado.innerHTML = '';
+  errorBox.classList.remove('visible');
+  btnNova.style.display = 'none';
+
+  const steps = ['Lendo os arquivos...','Identificando produtos e preços...','Cruzando os dados entre mercados...','Calculando as cestas...','Gerando insights...'];
+  let si = 0;
+  const si2 = setInterval(() => { si=(si+1)%steps.length; loadingStep.textContent=steps[si]; }, 2200);
+
+  try {
+    const parts = [];
+    for (const f of selectedFiles) {
+      const b64 = await toBase64(f);
+      const mime = getMime(f);
+      parts.push(mime==='application/pdf'
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:b64 } }
+        : { type:'image', source:{ type:'base64', media_type:mime, data:b64 } });
+    }
+    parts.push({ type:'text', text: promptAnalise(selectedCat) });
+
+    const res = await callAPI(parts, 4000);
+    const d = parseJSON(res);
+    await salvarNoBANCO(d);
+    renderResultado(d);
+  } catch(err) {
+    errorBox.textContent = 'Erro: ' + err.message;
+    errorBox.classList.add('visible');
+    btnAnalisar.disabled = false;
+  } finally {
+    clearInterval(si2);
+    loading.classList.remove('visible');
+    btnNova.style.display = 'block';
+  }
+});
+
+function promptAnalise(cat) {
+  return `Você é o agente de análise do "Aqui Perto!" — comunidade local de ofertas de Campo Grande, RJ.
+Analise os encartes e extraia preços da categoria: ${cat}.
+Retorne APENAS JSON válido, sem markdown, sem explicação:
+{
+  "data": "${hoje()}",
+  "categoria": "${cat}",
+  "mercados": ["Mercado1", "Mercado2"],
+  "tabela": [{"item": "Produto (kg)", "precos": {"Mercado1": 9.99, "Mercado2": null}}],
+  "cesta_tradicional": {"descricao": "Comprar tudo no mesmo mercado", "vencedor": "MercadoX", "valores": {"Mercado1": 99.99, "Mercado2": 88.50}},
+  "cesta_inteligente": {"descricao": "Melhor preço de cada item", "total": 72.30, "itens": [{"item": "Produto", "mercado": "MercadoX", "preco": 3.99}]},
+  "economia_acumulada": 16.20,
+  "insights": ["insight1", "insight2", "insight3"],
+  "texto_post": "Texto para WhatsApp com emojis, tabela, Cesta Inteligente e CTA"
+}
+Regras: null quando produto não aparece; cesta_inteligente agrupada por mercado; texto_post coloquial com voz de bairro; só preços legíveis.`;
+}
+
+async function salvarNoBANCO(d) {
+  await loadBanco();
+  (d.tabela || []).forEach(row => {
+    (d.mercados || []).forEach(m => {
+      const v = row.precos[m];
+      if (v !== null && v !== undefined) {
+        banco.push({ id: Date.now() + Math.random(), produto: row.item, mercado: m, preco: Number(v), categoria: d.categoria, fonte: 'encarte', data: d.data, timestamp: agora() });
+      }
+    });
+  });
+  await saveBanco();
+  updateStats();
+}
+
+// ─── EXTRAIR FOTO/NF ─────────────────────────────────────────────────────────
+async function extrairFoto() {
+  const loadF = document.getElementById('loadingFoto');
+  const extDiv = document.getElementById('extracao');
+  loadF.classList.add('visible'); extDiv.innerHTML = '';
+  try {
+    const parts = [];
+    for (const f of fotoFiles) {
+      const b64 = await toBase64(f); const mime = getMime(f);
+      parts.push(mime==='application/pdf'
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:b64 } }
+        : { type:'image', source:{ type:'base64', media_type:mime, data:b64 } });
+    }
+    parts.push({ type:'text', text:`Extraia todos os produtos e preços visíveis nesta imagem/NF. Retorne APENAS JSON:
+{"mercado": "Nome do mercado se visível ou 'Desconhecido'", "itens": [{"produto": "Nome produto", "preco": 9.99, "unidade": "kg/un/L"}]}
+Só itens com preço claramente legível.` });
+    const res = await callAPI(parts, 1500);
+    const d = parseJSON(res);
+    renderExtracaoConfirm(d);
+  } catch(err) {
+    extDiv.innerHTML = `<div class="error-box visible">Erro: ${err.message}</div>`;
+  } finally { loadF.classList.remove('visible'); }
+}
+
+function renderExtracaoConfirm(d) {
+  const ext = document.getElementById('extracao');
+  if (!d.itens || !d.itens.length) { ext.innerHTML = '<p style="font-size:12px;color:var(--texto-ter);margin-top:8px;">Nenhum preço encontrado.</p>'; return; }
+  let html = `<div style="margin-top:10px;padding:10px;background:var(--areia);border-radius:var(--radius-sm);">
+    <p style="font-size:11px;font-weight:600;color:var(--texto-sec);margin-bottom:8px;">✅ ${d.itens.length} itens encontrados em: <strong>${d.mercado}</strong></p>`;
+  d.itens.forEach((it, i) => {
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <input type="checkbox" id="ext${i}" checked style="accent-color:var(--verde);">
+      <input class="form-input" style="flex:2;padding:5px 8px;font-size:11px;" id="extProd${i}" value="${it.produto}">
+      <input class="form-input" style="width:70px;padding:5px 8px;font-size:11px;" id="extPreco${i}" type="number" value="${it.preco}" step="0.01">
+    </div>`;
+  });
+  html += `<input class="form-input" style="margin-bottom:8px;font-size:12px;" id="extMercado" value="${d.mercado}">
+    <select class="form-input" style="margin-bottom:8px;font-size:12px;" id="extCategoria">
+      <option>Hortifruti</option><option>Açougue</option><option>Mercearia</option><option>Laticínios</option><option>Outro</option>
+    </select>
+    <button class="btn-secondary" style="margin-bottom:0;" onclick="confirmarExtracao(${d.itens.length})">💾 Salvar selecionados no banco</button>
+  </div>`;
+  ext.innerHTML = html;
+}
+
+async function confirmarExtracao(total) {
+  await loadBanco();
+  const mercado = document.getElementById('extMercado').value;
+  const categoria = document.getElementById('extCategoria').value;
+  for (let i = 0; i < total; i++) {
+    if (document.getElementById('ext'+i).checked) {
+      banco.push({ id: Date.now()+Math.random(), produto: document.getElementById('extProd'+i).value, mercado, preco: Number(document.getElementById('extPreco'+i).value), categoria, fonte: 'contribuicao', data: hoje(), timestamp: agora() });
+    }
+  }
+  await saveBanco(); updateStats();
+  document.getElementById('extracao').innerHTML = '<p style="font-size:12px;color:var(--verde-medio);margin-top:8px;font-weight:600;">✅ Registros salvos no banco!</p>';
+  fotoFiles = []; renderFotosBanco();
+}
+
+// ─── ADICIONAR MANUAL ─────────────────────────────────────────────────────────
+async function adicionarManual() {
+  const produto = document.getElementById('manProduto').value.trim();
+  const mercado = document.getElementById('manMercado').value.trim();
+  const preco = parseFloat(document.getElementById('manPreco').value);
+  const categoria = document.getElementById('manCategoria').value;
+  const fonte = document.getElementById('manFonte').value;
+  if (!produto || !mercado || isNaN(preco)) { alert('Preencha produto, mercado e preço.'); return; }
+  await loadBanco();
+  banco.push({ id: Date.now(), produto, mercado, preco, categoria, fonte, data: hoje(), timestamp: agora() });
+  await saveBanco(); updateStats(); renderBanco();
+  document.getElementById('manProduto').value = '';
+  document.getElementById('manMercado').value = '';
+  document.getElementById('manPreco').value = '';
+}
+
+// ─── RENDER BANCO ─────────────────────────────────────────────────────────────
+function renderBanco() {
+  const q = (document.getElementById('searchBanco').value || '').toLowerCase();
+  const lista = document.getElementById('listaBanco');
+  const filtrado = [...banco].filter(r => !q || r.produto.toLowerCase().includes(q) || r.mercado.toLowerCase().includes(q)).sort((a,b) => b.id - a.id);
+  if (!filtrado.length) {
+    lista.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">${q ? 'Nenhum resultado.' : 'Banco vazio. Analise encartes ou adicione registros.'}</div></div>`;
+    return;
+  }
+  lista.innerHTML = filtrado.slice(0,100).map(r => `
+    <div class="registro-item">
+      <div style="flex:1;min-width:0;">
+        <div class="reg-produto">${r.produto}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;">
+          <span class="reg-mercado">${r.mercado}</span>
+          <span class="reg-fonte ${r.fonte}">${r.fonte==='encarte'?'encarte':r.fonte==='manual'?'manual':'contribuição'}</span>
+          <span class="reg-data">${r.data}</span>
+        </div>
+      </div>
+      <div class="reg-preco">R$ ${Number(r.preco).toFixed(2).replace('.',',')}</div>
+      <button class="reg-delete" onclick="deletarRegistro('${r.id}')">🗑️</button>
+    </div>`).join('');
+}
+
+async function deletarRegistro(id) {
+  banco = banco.filter(r => String(r.id) !== String(id));
+  await saveBanco(); updateStats(); renderBanco();
+}
+async function limparBanco() {
+  if (!confirm('Apagar todos os registros?')) return;
+  banco = []; await saveBanco(); updateStats(); renderBanco();
+}
+
+// ─── RENDER HISTÓRICO ─────────────────────────────────────────────────────────
+function renderHistorico() {
+  const q = (document.getElementById('searchHistorico').value || '').toLowerCase();
+  const lista = document.getElementById('listaHistorico');
+
+  // Agrupar por produto
+  const porProduto = {};
+  banco.forEach(r => {
+    const key = r.produto.toLowerCase();
+    if (!porProduto[key]) porProduto[key] = { nome: r.produto, registros: [] };
+    porProduto[key].registros.push(r);
+  });
+
+  const filtrado = Object.values(porProduto).filter(p => !q || p.nome.toLowerCase().includes(q));
+  if (!filtrado.length) {
+    lista.innerHTML = `<div class="empty-state"><div class="empty-icon">📈</div><div class="empty-text">Sem histórico ainda. Analise encartes para começar.</div></div>`;
+    return;
+  }
+
+  lista.innerHTML = filtrado.map(p => {
+    const regs = p.registros.sort((a,b) => b.id-a.id);
+    const precos = regs.map(r => r.preco);
+    const min = Math.min(...precos); const max = Math.max(...precos);
+    const media = precos.reduce((s,v)=>s+v,0)/precos.length;
+    const ultimo = regs[0];
+    const isSuperOferta = ultimo.preco <= media * 0.85;
+    const trend = regs.length > 1 ? (regs[0].preco <= regs[1].preco ? '↓' : '↑') : '';
+    const trendClass = trend === '↓' ? 'hist-trend-down' : 'hist-trend-up';
+    return `<div class="historico-item">
+      <div class="hist-header">
+        <div class="hist-produto">${p.nome}${isSuperOferta?'<span class="badge-super">SUPER OFERTA</span>':''}</div>
+        <div class="${trendClass}">${trend} R$ ${Number(ultimo.preco).toFixed(2).replace('.',',')}</div>
+      </div>
+      <div class="hist-row"><span>Mínimo histórico</span><span style="font-weight:600;color:var(--verde-medio);">R$ ${min.toFixed(2).replace('.',',')}</span></div>
+      <div class="hist-row"><span>Média histórica</span><span>R$ ${media.toFixed(2).replace('.',',')}</span></div>
+      <div class="hist-row"><span>Máximo histórico</span><span style="color:var(--texto-ter);">R$ ${max.toFixed(2).replace('.',',')}</span></div>
+      <div class="hist-row"><span>Registros</span><span>${regs.length} (${new Set(regs.map(r=>r.mercado)).size} mercados)</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ─── CONSULTAR HISTÓRICO ─────────────────────────────────────────────────────
+async function consultarHistorico() {
+  const q = document.getElementById('consultaInput').value.trim();
+  if (!q) return;
+  const loadC = document.getElementById('loadingConsulta');
+  const resp = document.getElementById('consultaResposta');
+  loadC.classList.add('visible'); resp.classList.remove('visible');
+
+  await loadBanco();
+  if (!banco.length) {
+    loadC.classList.remove('visible');
+    resp.textContent = 'O banco de preços ainda está vazio. Analise alguns encartes primeiro para construir o histórico.';
+    resp.classList.add('visible'); return;
+  }
+
+  // Resumo do banco para a IA
+  const resumo = resumirBanco();
+
+  try {
+    const res = await callAPI([{ type:'text', text:
+      `Você é o analista de preços do "Aqui Perto!" — comunidade local de Campo Grande, RJ.
+Aqui está o banco de preços histórico:
+${resumo}
+
+Responda à seguinte consulta em linguagem natural, de forma direta e útil, destacando insights relevantes:
+"${q}"
+
+Use emojis, seja objetivo e mencione valores específicos quando relevante. Se identificar super ofertas (preço abaixo de 85% da média), destaque com 🌟.`
+    }], 1000);
+    resp.textContent = res;
+    resp.classList.add('visible');
+  } catch(err) {
+    resp.textContent = 'Erro ao consultar: ' + err.message;
+    resp.classList.add('visible');
+  } finally { loadC.classList.remove('visible'); }
+}
+
+function resumirBanco() {
+  const porProduto = {};
+  banco.forEach(r => {
+    const k = r.produto.toLowerCase();
+    if (!porProduto[k]) porProduto[k] = { nome: r.produto, registros: [] };
+    porProduto[k].registros.push(r);
+  });
+  return Object.values(porProduto).map(p => {
+    const regs = p.registros;
+    const media = regs.reduce((s,r)=>s+r.preco,0)/regs.length;
+    const ultimo = regs.sort((a,b)=>b.id-a.id)[0];
+    return `${p.nome}: último R$${ultimo.preco.toFixed(2)} em ${ultimo.mercado} (${ultimo.data}), média R$${media.toFixed(2)}, ${regs.length} registros`;
+  }).join('\n');
+}
+
+// ─── API KEY ──────────────────────────────────────────────────────────────────
+function getApiKey() {
+  let key = localStorage.getItem('ap_apikey') || '';
+  if (!key) {
+    key = prompt('Cole sua chave da API Anthropic (sk-ant-...):\n\nEncontre em: console.anthropic.com → API Keys');
+    if (key && key.trim().startsWith('sk-')) {
+      localStorage.setItem('ap_apikey', key.trim());
+    } else {
+      alert('Chave inválida. Tente novamente.');
+      return null;
+    }
+  }
+  return key.trim();
+}
+
+
+async function callAPI(content, maxTokens) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Chave da API não informada.');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true'
+    },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content }] })
+  });
+  if (!res.ok) {
+    const e = await res.json();
+    if (e.error?.type === 'exceeded_limit') throw new Error('Limite de uso atingido. Aguarde alguns minutos.');
+    if (e.error?.type === 'authentication_error') {
+      localStorage.removeItem('ap_apikey');
+      throw new Error('Chave inválida. Recarregue a página e tente novamente.');
+    }
+    throw new Error(e.error?.message || 'Erro na API');
+  }
+  const data = await res.json();
+  return data.content.map(c => c.text||'').join('');
+}
+function parseJSON(raw) {
+  return JSON.parse(raw.replace(/```json|```/g,'').trim());
+}
+
+// ─── RENDER RESULTADO ─────────────────────────────────────────────────────────
+function renderResultado(d) {
+  const mercados = d.mercados || [];
+
+  function bestPrice(precos) {
+    const vals = Object.values(precos).filter(v => v!==null && v!==undefined);
+    return vals.length ? Math.min(...vals) : null;
+  }
+
+  // TABELA
+  let tabelaHTML = `<div class="tabela-wrap"><table><thead><tr><th>Produto</th>${mercados.map(m=>`<th>${m}</th>`).join('')}</tr></thead><tbody>`;
+  (d.tabela||[]).forEach(row => {
+    const best = bestPrice(row.precos);
+    tabelaHTML += `<tr><td class="item-name">${row.item}</td>`;
+    mercados.forEach(m => {
+      const v = row.precos[m];
+      if (v===null||v===undefined) { tabelaHTML += `<td style="color:var(--texto-ter)">—</td>`; }
+      else if (v===best) { tabelaHTML += `<td class="price-best">R$ ${v.toFixed(2).replace('.',',')}</td>`; }
+      else { tabelaHTML += `<td style="${(v-best)>3?'color:var(--texto-ter)':''}">R$ ${v.toFixed(2).replace('.',',')}</td>`; }
+    });
+    tabelaHTML += `</tr>`;
+  });
+  tabelaHTML += `</tbody></table></div>`;
+
+  // CESTA TRADICIONAL
+  const cestaTrad = d.cesta_tradicional || {};
+  const tradVals = Object.entries(cestaTrad.valores||{}).sort((a,b)=>a[1]-b[1]);
+  const vencedor = cestaTrad.vencedor || (tradVals[0]&&tradVals[0][0]);
+  let cestaTradHTML = `<div class="cesta-trad-grid">`;
+  tradVals.forEach(([m,v]) => {
+    const iW = m===vencedor;
+    cestaTradHTML += `<div class="cesta-trad-item ${iW?'winner':''}"><div class="cesta-trad-mercado">${m}</div><div class="cesta-trad-valor">R$ ${Number(v).toFixed(2).replace('.',',')}</div>${iW?'<div class="cesta-trad-badge">🏆 Mais barato</div>':''}</div>`;
+  });
+  cestaTradHTML += `</div>`;
+
+  // CESTA INTELIGENTE agrupada por mercado
+  const cestaInt = d.cesta_inteligente || {};
+  const totalInt = cestaInt.total || 0;
+  const itensInt = cestaInt.itens || [];
+  const porMercado = {};
+  itensInt.forEach(it => { if (!porMercado[it.mercado]) porMercado[it.mercado]=[]; porMercado[it.mercado].push(it); });
+  let cestaIntHTML = `<div class="cesta-int-total"><div class="cesta-int-valor">R$ ${Number(totalInt).toFixed(2).replace('.',',')}</div><div class="cesta-int-label">somando o menor<br>preço de cada item</div></div>`;
+  Object.entries(porMercado).forEach(([mercado, itens]) => {
+    const sub = itens.reduce((s,i)=>s+Number(i.preco),0);
+    cestaIntHTML += `<div style="margin-top:10px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;"><span style="font-size:11px;font-weight:700;color:var(--verde);background:var(--verde-claro);padding:2px 9px;border-radius:99px;">📍 ${mercado}</span><span style="font-size:11px;color:var(--texto-sec);">R$ ${sub.toFixed(2).replace('.',',')}</span></div><div>`;
+    itens.forEach(it => { cestaIntHTML += `<div class="cesta-int-row"><span>${it.item}</span><span class="cesta-int-preco">R$ ${Number(it.preco).toFixed(2).replace('.',',')}</span></div>`; });
+    cestaIntHTML += `</div></div>`;
+  });
+
+  const econAcum = d.economia_acumulada || 0;
+  const economiaHTML = econAcum > 0 ? `<div class="economia-banner"><div><div style="font-size:11px;color:rgba(255,255,255,0.8);">💰 Economia acumulada</div><div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:2px;">Cesta Inteligente vs. tudo no mais barato</div></div><div style="text-align:right"><div class="economia-valor">R$ ${Number(econAcum).toFixed(2).replace('.',',')}</div><div style="font-size:10px;color:rgba(255,255,255,0.55);">a mais no bolso</div></div></div>` : '';
+
+  const cestaHTML = `<div class="cestas-wrap">
+    <div class="cesta-bloco"><div class="cesta-bloco-header"><div><div class="cesta-bloco-titulo">🛒 Cesta Tradicional</div><div class="cesta-bloco-desc">Comprar tudo no mesmo mercado</div></div></div><div class="cesta-bloco-body">${cestaTradHTML}</div></div>
+    <div class="cesta-bloco inteligente"><div class="cesta-bloco-header"><div><div class="cesta-bloco-titulo">🧠 Cesta Inteligente</div><div class="cesta-bloco-desc">Melhor preço de cada item — roteiro otimizado</div></div><span style="font-size:10px;font-weight:700;color:var(--amarelo);background:var(--verde);padding:2px 8px;border-radius:99px;">NOVO</span></div><div class="cesta-bloco-body">${cestaIntHTML}</div></div>
+  </div>${economiaHTML}`;
+
+  // INSIGHTS
+  const insightsHTML = (d.insights||[]).map((ins,i) => {
+    const emojis=['🔍','⚠️','💡','📌','🎯'];
+    return `<div class="insight-item"><div class="insight-emoji">${emojis[i%emojis.length]}</div><div class="insight-text">${ins}</div></div>`;
+  }).join('');
+
+  // POST
+  const postId = 'postText_'+Date.now();
+  const postHTML = `<div class="post-text" id="${postId}">${d.texto_post||''}</div><button class="btn-copy" onclick="copiarTexto('${postId}',this)">📋 Copiar texto para o grupo</button>`;
+
+  resultado.innerHTML = `
+    <div class="result-card"><div class="result-card-header"><span class="result-card-title">📊 Comparativo — ${d.categoria} · ${d.data}</span><span style="font-size:11px;color:rgba(255,255,255,0.6)">${mercados.length} mercados</span></div><div class="result-card-body">${tabelaHTML}</div></div>
+    <div class="result-card"><div class="result-card-header"><span class="result-card-title">🛒 Cesta Tradicional vs 🧠 Cesta Inteligente</span></div><div class="result-card-body">${cestaHTML}</div></div>
+    <div class="result-card"><div class="result-card-header"><span class="result-card-title">💡 Insights do bairro</span></div><div class="result-card-body">${insightsHTML}</div></div>
+    <div class="result-card"><div class="result-card-header"><span class="result-card-title">📱 Texto pronto para o grupo</span></div><div class="result-card-body">${postHTML}</div></div>`;
+
+  resultado.classList.add('visible');
+  resultado.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function copiarTexto(id, btn) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
+    btn.textContent = '✅ Copiado!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copiar texto para o grupo'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+
+function resetar() {
+  selectedFiles = []; renderFiles();
+  produtosManuais = []; mercadosManuais = [];
+  resultado.classList.remove('visible'); resultado.innerHTML = '';
+  errorBox.classList.remove('visible');
+  btnNova.style.display = 'none'; btnAnalisar.disabled = true;
+  setModo('arquivo');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+// ─── EXEMPLO ──────────────────────────────────────────────────────────────────
+function carregarExemplo() {
+  const d = {
+    data: "17/06/2026", categoria: "Hortifruti",
+    mercados: ["SuperRede", "MAM", "Rede Economia"],
+    tabela: [
+      { item:"Abacate (kg)", precos:{"SuperRede":4.78,"MAM":3.99,"Rede Economia":3.95} },
+      { item:"Abacaxi (un)", precos:{"SuperRede":7.99,"MAM":8.99,"Rede Economia":3.95} },
+      { item:"Aipim (kg)", precos:{"SuperRede":2.99,"MAM":2.99,"Rede Economia":3.45} },
+      { item:"Banana Prata (kg)", precos:{"SuperRede":5.98,"MAM":3.99,"Rede Economia":7.95} },
+      { item:"Batata Lavada (kg)", precos:{"SuperRede":7.49,"MAM":6.99,"Rede Economia":7.95} },
+      { item:"Batata Doce (kg)", precos:{"SuperRede":3.99,"MAM":4.99,"Rede Economia":4.95} },
+      { item:"Cebola Nacional (kg)", precos:{"SuperRede":5.97,"MAM":5.99,"Rede Economia":3.45} },
+      { item:"Cenoura (kg)", precos:{"SuperRede":8.98,"MAM":8.99,"Rede Economia":3.95} },
+      { item:"Coco Seco (un)", precos:{"SuperRede":4.99,"MAM":4.99,"Rede Economia":3.95} },
+      { item:"Inhame (kg)", precos:{"SuperRede":4.78,"MAM":5.99,"Rede Economia":5.98} },
+      { item:"Laranja Pera (kg)", precos:{"SuperRede":2.99,"MAM":2.99,"Rede Economia":3.45} },
+      { item:"Limão Tahiti (kg)", precos:{"SuperRede":2.98,"MAM":3.99,"Rede Economia":3.45} },
+      { item:"Manga Palmer (kg)", precos:{"SuperRede":4.75,"MAM":4.99,"Rede Economia":4.95} }
+    ],
+    cesta_tradicional: { descricao:"Comprar tudo no mesmo mercado", vencedor:"Rede Economia", valores:{"SuperRede":71.21,"MAM":70.87,"Rede Economia":60.38} },
+    cesta_inteligente: { descricao:"Melhor preço de cada item", total:51.18,
+      itens:[
+        {item:"Abacate (kg)",mercado:"Rede Economia",preco:3.95},
+        {item:"Abacaxi (un)",mercado:"Rede Economia",preco:3.95},
+        {item:"Cebola Nacional (kg)",mercado:"Rede Economia",preco:3.45},
+        {item:"Cenoura (kg)",mercado:"Rede Economia",preco:3.95},
+        {item:"Coco Seco (un)",mercado:"Rede Economia",preco:3.95},
+        {item:"Banana Prata (kg)",mercado:"MAM",preco:3.99},
+        {item:"Batata Lavada (kg)",mercado:"MAM",preco:6.99},
+        {item:"Laranja Pera (kg)",mercado:"MAM",preco:2.99},
+        {item:"Aipim (kg)",mercado:"SuperRede",preco:2.99},
+        {item:"Batata Doce (kg)",mercado:"SuperRede",preco:3.99},
+        {item:"Inhame (kg)",mercado:"SuperRede",preco:4.78},
+        {item:"Limão Tahiti (kg)",mercado:"SuperRede",preco:2.98},
+        {item:"Manga Palmer (kg)",mercado:"SuperRede",preco:4.75}
+      ]
+    },
+    economia_acumulada: 9.20,
+    insights: [
+      "A Rede Economia massacrou a concorrência em Cenoura (R$ 3,95 vs R$ 8,98 na SuperRede) e Abacaxi (R$ 3,95 vs R$ 8,99 no MAM) — mais que o dobro de diferença nesses dois itens.",
+      "Pegadinha da Banana: a Rede Economia é mais barata no geral, mas a Banana Prata lá custa R$ 7,95/kg — quase o dobro do MAM (R$ 3,99). Vale muito a pena pegar a banana no MAM.",
+      "Fazendo o roteiro da Cesta Inteligente você economiza R$ 9,20 a mais do que comprar tudo só na Rede Economia. Três paradas, máxima economia."
+    ],
+    texto_post: "📊 COMPARATIVO HORTIFRUTI — 17/06\nAqui Perto! · Campo Grande e região\n\nFiz o levantamento dos preços de hoje em 3 mercados. Olha a diferença que dá pesquisar antes de sair de casa 👇\n\n🛒 Comprar tudo num lugar só:\n🏆 Rede Economia → R$ 60,38\nMAM → R$ 70,87\nSuperRede → R$ 71,21\n\n🧠 Mas se fizer o roteiro inteligente:\n📍 Rede Economia: Abacaxi R$ 3,95 · Cenoura R$ 3,95 · Cebola R$ 3,45...\n📍 MAM: Banana R$ 3,99 · Batata Lavada R$ 6,99...\n📍 SuperRede: Limão R$ 2,98 · Aipim R$ 2,99...\n\n💰 Total da Cesta Inteligente: R$ 51,18\nvs comprar tudo na Rede Economia: R$ 60,38\n🎉 Economia acumulada: R$ 9,20 no bolso!\n\nQuer receber esse comparativo toda semana?\n👉 Entre no grupo: [link]\n📲 Aqui Perto! — Ofertas de quem conhece o bairro"
+  };
+  resultado.classList.remove('visible'); resultado.innerHTML = '';
+  errorBox.classList.remove('visible');
+  renderResultado(d);
+  salvarNoBANCO(d);
+  btnNova.style.display = 'block';
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadBanco();
+</script>
+</body>
+</html>
